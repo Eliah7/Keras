@@ -64,7 +64,8 @@ with open(file_name, 'r') as file:
         except ValueError as e:
             print(str(e))
             pass
-
+    
+    
 X = sequence.pad_sequences(X, maxlen=MAX_SENTENCE_LENGTH)
 
 # preparing training and test data
@@ -84,9 +85,9 @@ model.add(Activation("sigmoid"))
 
 model.compile(loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"])
 
-history = model.fit(Xtrain, ytrain, batch_size=BATCH_SIZE, epochs=NUM_EPOCHS, validation_data=(Xtest, ytest))
+history = model.fit(Xtrain, ytrain, batch_size=BATCH_SIZE, epochs=NUM_EPOCHS,verbose=0, validation_data=(Xtest, ytest))
 
-score, acc = model.evaluate(Xtest, ytest, batch_size=BATCH_SIZE)
+score, acc = model.evaluate(Xtest, ytest, batch_size=BATCH_SIZE,verbose=0)
 print('Test score: %.3f, accuracy: %.3f' % (score, acc))
 
 for i in range(5):
@@ -95,7 +96,40 @@ for i in range(5):
     ylabel = ytest[idx]
     ypred = model.predict(xtest)[0][0]
     sent = " ".join([index2word[x] for x in xtest[0].tolist() if x != 0])
-    print("%.0f\t%d\t%s" % (ypred, ylabel, sent))
+    print("%.0f\t\t%d\t\t%s" % (ypred, ylabel, sent))
+
+def make_prediction_2(sentence):
+    words = nltk.word_tokenize(sentence.lower())
+    seqs = []
+    for word in words:
+        if word in word2index:
+            seqs.append(word2index[word])
+        else:
+            seqs.append(word2index["UNK"])
+    X_new = np.array([seqs])
+    X_new = sequence.pad_sequences(X_new, maxlen=MAX_SENTENCE_LENGTH)
+    return model.predict(X_new[0].reshape(1,40))[0][0]
+    
+def make_prediction(sentence_arr):
+    i = 0
+    X_new = np.empty((len(sentence_arr), ), dtype=list)
+    for sentence in sentence_arr:
+        words =  nltk.word_tokenize(sentence.lower())
+        seqs = []
+        for word in words:
+            if word in word2index:
+                seqs.append(word2index[word])
+            else:
+                seqs.append(word2index["UNK"])
+        X_new[i] = seqs
+        i += 1
+    X_new = sequence.pad_sequences(X_new, maxlen=MAX_SENTENCE_LENGTH)
+    result = []
+    for each in X_new:
+            result.append(model.predict(each.reshape(1, 40))[0][0])
+    return result
+
+#print(make_prediction(["Hey, I love you","You are a monster"]))
 
 plt.subplot(211)
 plt.title("Accuracy")
